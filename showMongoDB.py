@@ -10,7 +10,7 @@ load_dotenv()
 
 # CONFIGURING CONNECTION TO MONGODB | REPLACE <USERNAME>, <PASSWORD> AND <CONNECTION> BY YOURS
 uri = "mongodb+srv://<USERNAME>:<PASSWORD>@<CONNECTION>.rrvp2xw.mongodb.net/?retryWrites=true&w=majority"
-mongodb_uri = os.getenv('uri')
+mongodb_uri = uri
 client = MongoClient(mongodb_uri)
 db = client[""] # enter database name client
 collection = db[""] # enter collection name database
@@ -67,15 +67,21 @@ def show_new_data(new_data, counter):
 # LISTEN CHANGES IN COLLECTION
 def listen_modify(counter_initial):
     counter = counter_initial
-    with collection.watch() as stream:
-        while stream.alive:
-            try:
-                update = stream.next()
-                new_data_id = update['documentKey']['_id']
-                new_data = collection.find_one({'_id': new_data_id})
-                counter = show_new_data(new_data, counter)
-            except StopIteration:
-                pass
+    try:
+        with collection.watch() as stream:
+            while stream.alive:
+                try:
+                    update = stream.next()
+                    new_data_id = update['documentKey']['_id']
+                    new_data = collection.find_one({'_id': new_data_id})
+                    counter = show_new_data(new_data, counter)
+                except StopIteration:
+                    pass
+    except KeyboardInterrupt:
+        clear_terminal()
+        filename = os.path.basename(__file__)
+        print(f"CLOSING OF {filename.upper()}")
+        sys.exit(0)
 
 counter_initial = show_data() # DISPLAY INITIAL DATA OF COLLECTION
 listen_modify(counter_initial) # LISTEN CHANGES IN COLLECTION
